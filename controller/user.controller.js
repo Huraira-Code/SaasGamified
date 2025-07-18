@@ -23,6 +23,8 @@ const cookieOptions = {
   sameSite: "lax", // More relaxed than "none" but still prevents CSRF in most cases
   secure: true, // Allow over HTTP (not HTTPS) – NOT secure, use only for local development
   httpOnly: true, // Allows access from JavaScript – not recommended, but workable
+  path: "/",
+
 };
 // --- HELPER FUNCTION TO GET DYNAMIC MODELS ---
 const getUserModel = (req) => {
