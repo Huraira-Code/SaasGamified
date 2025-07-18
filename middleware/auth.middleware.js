@@ -21,7 +21,7 @@ const getPaymentModel = (req) => {
 
 export const isLoggedIn = asyncHandler(async (req, res, next) => {
   const { token } = req.cookies;
-
+  console.log(token)
   if (!token) {
     return next(
       new AppError("unauthorised user or token is expire. please login", 401)
