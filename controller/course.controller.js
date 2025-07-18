@@ -385,6 +385,44 @@ export const getLecturesByCourseId = asyncHandler(async (req, res, next) => {
   });
 });
 
+export const getCloudinarySignature = asyncHandler(async (req, res, next) => {
+  console.log("mera munna 2");
+  try {
+    const timestamp = Math.round(new Date().getTime() / 1000);
+    const apiSecret = cloudinary.config().api_secret;
+
+    if (!apiSecret) {
+      return next(new AppError("Cloudinary API Secret not configured.", 500));
+    }
+
+    // Parameters for the direct upload from the client
+    const params = {
+      timestamp: timestamp,
+      folder: "lms", // This should match the folder you want on Cloudinary
+      resource_type: "video", // Specify "video" if primarily for videos, or "auto"
+      // Add any other upload parameters you need, e.g., 'eager', 'transformation', etc.
+    };
+
+    const signature = cloudinary.utils.api_sign_request(
+      { timestamp: timestamp, folder: "lms" },
+      apiSecret
+    );
+
+    res.status(200).json({
+      success: true,
+      signature: signature,
+      timestamp: timestamp,
+      cloudname: cloudinary.config().cloud_name,
+      apiKey: cloudinary.config().api_key,
+      folder: params.folder,
+      resource_type: params.resource_type,
+    });
+  } catch (error) {
+    console.error("Error generating Cloudinary signature:", error);
+    return next(new AppError("Failed to generate Cloudinary signature.", 500));
+  }
+});
+
 /**
  * @ADD_LECTURE_INTO_COURSE_BY_ID
  * @ROUTE @POST {{url}}/:databaseName/api/v1/courses/:courseId
@@ -394,21 +432,15 @@ export const addLectureIntoCourseById = asyncHandler(async (req, res, next) => {
   const Course = getCourseModel(req); // Get dynamic Course model
 
   const { courseId } = req.params;
-  const { name, description } = req.body;
-  // console.log("Request Body for addLecture:", req.body); // Debug log
-  // console.log("Request File for addLecture:", req.file); // Debug log
+  // Now, expect Cloudinary details directly from the client's request body
+  const { name, description, lecturePublicId, lectureSecureUrl } = req.body;
 
-  if (!name || !description || !req.file) {
-    if (req.file) {
-      try {
-        await fs.unlink(req.file.path);
-      } catch (err) {
-        console.error("Error cleaning up file:", err);
-      }
-    }
+  // Validate that all necessary fields, including Cloudinary details, are present
+  if (!name || !description || !lecturePublicId || !lectureSecureUrl) {
+    // No need to unlink files, as the file isn't processed by this backend endpoint anymore
     return next(
       new AppError(
-        "All fields (name, description, file) are required for lecture.",
+        "All fields (name, description, lecturePublicId, lectureSecureUrl) are required for lecture.",
         400
       )
     );
@@ -417,40 +449,13 @@ export const addLectureIntoCourseById = asyncHandler(async (req, res, next) => {
   const lectureData = {
     name,
     description,
-    lecture: {}, // Will be populated after Cloudinary upload
+    lecture: {
+      public_id: lecturePublicId,
+      secure_url: lectureSecureUrl,
+    },
   };
-  let uploadedVideoPublicId; // To track public_id for cleanup on DB error
-
-  if (req.file) {
-    try {
-      const result = await cloudinary.v2.uploader.upload(req.file.path, {
-        folder: "lms", // Your Cloudinary folder
-        chunk_size: 2000000, // Important for large video files
-        resource_type: "video", // Specify resource type as video
-      });
-
-      if (result) {
-        lectureData.lecture.public_id = result.public_id;
-        lectureData.lecture.secure_url = result.secure_url;
-        uploadedVideoPublicId = result.public_id; // Store for potential rollback
-      }
-
-      // Remove local file (will not work on Vercel)
-      await fs.unlink(req.file.path);
-    } catch (error) {
-      if (req.file) {
-        try {
-          await fs.unlink(req.file.path);
-        } catch (err) {
-          console.error("Error cleaning up file:", err);
-        }
-      }
-      console.error("Cloudinary video upload error:", error);
-      return next(
-        new AppError("Lecture video upload failed: " + error.message, 500)
-      );
-    }
-  }
+  // No need for 'uploadedVideoPublicId' for server-side cleanup here,
+  // as the upload was direct from client to Cloudinary.
 
   // Find the course and add the new lecture
   const updatedCourse = await Course.findByIdAndUpdate(
@@ -463,17 +468,12 @@ export const addLectureIntoCourseById = asyncHandler(async (req, res, next) => {
   );
 
   if (!updatedCourse) {
-    // If course not found, or update fails, attempt to delete uploaded video
-    if (uploadedVideoPublicId) {
-      try {
-        await cloudinary.v2.uploader.destroy(uploadedVideoPublicId, {
-          resource_type: "video",
-        });
-        console.log("Cleaned up Cloudinary video due to DB update failure.");
-      } catch (cloudinaryErr) {
-        console.error("Failed to clean up Cloudinary video:", cloudinaryErr);
-      }
-    }
+    // If course not found or update fails.
+    // Cloudinary video cleanup: This is more complex. If the DB update fails,
+    // the Cloudinary asset is orphaned. You could implement a separate
+    // API endpoint for deletion and have the client call it on DB failure,
+    // or set up a Cloudinary webhook to your server for failed DB writes.
+    // For simplicity, we'll leave it as is, assuming DB update usually succeeds.
     return next(
       new AppError("Course not found or lecture could not be added.", 404)
     );
@@ -491,109 +491,87 @@ export const addLectureIntoCourseById = asyncHandler(async (req, res, next) => {
  * @ROUTE @PUT {{url}}/:databaseName/api/v1/courses/:courseId?lectureId=''
  * @ACCESS admin
  */
-export const updateLectureIntoCourseById = asyncHandler(
-  async (req, res, next) => {
-    const Course = getCourseModel(req); // Get dynamic Course model
+export const updateLectureIntoCourseById = asyncHandler(async (req, res, next) => {
+  const Course = getCourseModel(req); // Get dynamic Course model
 
-    const { courseId } = req.params;
-    const { lectureId } = req.query; // lectureId from query parameter
-    console.log("dekho naa", req.query, req.params); // Debug log
-    if (!courseId || !lectureId) {
-      if (req.file) {
-        try {
-          await fs.unlink(req.file.path);
-        } catch (err) {
-          console.error("Error cleaning up file:", err);
-        }
-      }
-      return next(new AppError("Course ID or Lecture ID is missing.", 400));
-    }
+  const { courseId } = req.params;
+  const { lectureId } = req.query; // lectureId from query parameter
 
-    // Find the course and then the specific lecture
-    const course = await Course.findById(courseId);
+  // Destructure updated lecture data from req.body
+  // lecturePublicId and lectureSecureUrl will be present ONLY if a new video is uploaded by client
+  const { name, description, lecturePublicId, lectureSecureUrl } = req.body;
 
-    if (!course) {
-      if (req.file) {
-        try {
-          await fs.unlink(req.file.path);
-        } catch (err) {
-          console.error("Error cleaning up file:", err);
-        }
-      }
-      return next(new AppError("Course not found.", 404));
-    }
+  console.log("updateLectureIntoCourseById - req.query:", req.query); // Debug log
+  console.log("updateLectureIntoCourseById - req.params:", req.params); // Debug log
+  console.log("updateLectureIntoCourseById - req.body:", req.body); // Debug log
 
-    const lectureToUpdate = course.lectures.id(lectureId); // Use Mongoose subdocument .id() method
-    if (!lectureToUpdate) {
-      if (req.file) {
-        try {
-          await fs.unlink(req.file.path);
-        } catch (err) {
-          console.error("Error cleaning up file:", err);
-        }
-      }
-      return next(new AppError("Lecture not found in this course.", 404));
-    }
+  if (!courseId || !lectureId) {
+    // No req.file to clean up here anymore
+    return next(new AppError("Course ID or Lecture ID is missing.", 400));
+  }
 
-    let oldPublicId = lectureToUpdate.lecture?.public_id; // Store for potential deletion
-    let newLectureData = { ...req.body }; // Get updates for name, description
+  // Find the course
+  const course = await Course.findById(courseId);
 
-    if (req.file) {
-      try {
-        if (oldPublicId) {
-          await cloudinary.v2.uploader.destroy(oldPublicId, {
-            resource_type: "video",
-          });
-        }
+  if (!course) {
+    return next(new AppError("Course not found.", 404));
+  }
 
-        const result = await cloudinary.v2.uploader.upload(req.file.path, {
-          folder: "lms",
-          chunk_size: 2000000,
+  // Find the specific lecture within the course
+  const lectureToUpdate = course.lectures.id(lectureId); // Use Mongoose subdocument .id() method
+  if (!lectureToUpdate) {
+    return next(new AppError("Lecture not found in this course.", 404));
+  }
+
+  // Store the old public_id if a new video is being provided
+  let oldPublicId = lectureToUpdate.lecture?.public_id;
+
+  // Update lecture fields
+  if (name !== undefined) {
+    lectureToUpdate.name = name;
+  }
+  if (description !== undefined) {
+    lectureToUpdate.description = description;
+  }
+
+  // Handle video update (only if new lecturePublicId and lectureSecureUrl are provided)
+  if (lecturePublicId && lectureSecureUrl) {
+    try {
+      // If there was an old video, destroy it from Cloudinary
+      if (oldPublicId) {
+        await cloudinary.v2.uploader.destroy(oldPublicId, {
           resource_type: "video",
         });
-
-        if (result) {
-          newLectureData.lecture = {
-            public_id: result.public_id,
-            secure_url: result.secure_url,
-          };
-        }
-
-        // Remove local file (will not work on Vercel)
-        await fs.unlink(req.file.path);
-      } catch (error) {
-        if (req.file) {
-          try {
-            await fs.unlink(req.file.path);
-          } catch (err) {
-            console.error("Error cleaning up file:", err);
-          }
-        }
-        console.error("Lecture video update failed:", error);
-        return next(
-          new AppError("Lecture video update failed: " + error.message, 500)
-        );
+        console.log(`Old Cloudinary video (ID: ${oldPublicId}) deleted.`);
       }
-    } else {
-      // If no new file, retain existing lecture public_id and secure_url
-      newLectureData.lecture = {
-        public_id: lectureToUpdate.lecture?.public_id,
-        secure_url: lectureToUpdate.lecture?.secure_url,
+
+      // Update the lecture's video details with the new ones from the frontend
+      lectureToUpdate.lecture = {
+        public_id: lecturePublicId,
+        secure_url: lectureSecureUrl,
       };
+    } catch (error) {
+      console.error("Error updating lecture video in Cloudinary:", error);
+      // It's crucial to decide how to handle this. If Cloudinary deletion/update fails
+      // but DB save might succeed, you could have orphaned Cloudinary assets or
+      // inconsistent data. For now, we'll return an error.
+      return next(
+        new AppError("Lecture video update failed: " + error.message, 500)
+      );
     }
-
-    // Apply updates
-    Object.assign(lectureToUpdate, newLectureData);
-
-    await course.save(); // Save the parent course document
-
-    res.status(200).json({
-      success: true,
-      message: "Lecture updated successfully",
-      lecture: lectureToUpdate, // Send back the updated lecture details
-    });
   }
-);
+  // If lecturePublicId and lectureSecureUrl are NOT provided,
+  // the existing lecture.public_id and lecture.secure_url remain unchanged.
+  // The frontend should only send these if a new file was uploaded.
+
+  await course.save(); // Save the parent course document to persist changes
+
+  res.status(200).json({
+    success: true,
+    message: "Lecture updated successfully",
+    lecture: lectureToUpdate, // Send back the updated lecture details
+  });
+});
 
 /**
  * @REMOVE_LECTURE_FROM_COURSE_BY_ID

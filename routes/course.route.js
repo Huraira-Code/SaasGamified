@@ -28,9 +28,11 @@ import {
   deleteQuestionFromQuiz,
   getCourseSequence,
   updateCourseSequence,
+  getCloudinarySignature,
 } from "../controller/course.controller.js";
 
 router.route("/filters").get(getFilterList);
+router.route("/cloudinary-signature").get(getCloudinarySignature);
 
 router
   .route("/")
@@ -54,12 +56,7 @@ router.route("/getallUser").post(getAllUsers);
 router
   .route("/:courseId")
   .get(isLoggedIn, isPurchasedCourse, getLecturesByCourseId)
-  .post(
-    isLoggedIn,
-    authorizedRoles("ADMIN"),
-    upload.single("lecture"),
-    addLectureIntoCourseById
-  )
+  .post(isLoggedIn, authorizedRoles("ADMIN"), addLectureIntoCourseById)
   .put(
     isLoggedIn,
     authorizedRoles("ADMIN"),
@@ -96,7 +93,7 @@ router
   .put(isLoggedIn, authorizedRoles("ADMIN"), updateQuestionInQuiz) // Admin can update a question
   .delete(isLoggedIn, authorizedRoles("ADMIN"), deleteQuestionFromQuiz); // Admin can delete a question
 
-  router
+router
   .route("/:courseId/sequence")
   .get(isLoggedIn, isPurchasedCourse, getCourseSequence) // User must be logged in and have purchased the course
   .put(isLoggedIn, authorizedRoles("ADMIN"), updateCourseSequence); // Only admin can update the sequence
