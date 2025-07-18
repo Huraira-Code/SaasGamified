@@ -2,10 +2,10 @@ import multer from "multer";
 import path from "path";
 
 export const upload = multer({
-  dest: "uploads/",
+  dest: "/tmp",
   limits: { fieldSize: 5 * 1024 * 1024 },
   storage: multer.diskStorage({
-    destination: "uploads/",
+    destination: "/tmp",
     filename: (_req, file, cb) => {
       cb(null, file.originalname);
     },
