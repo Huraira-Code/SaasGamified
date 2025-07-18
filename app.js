@@ -30,7 +30,7 @@ export const stripe = Stripe(process.env.STRIPE_SECRET);
 
 // --- Core Express Middleware ---
 const corsOptions = {
-  origin: ["https://ednova.netlify.app", process.env.FRONT_URL],
+  origin: ["https://ednova.netlify.app", process.env.FRONT_URL , "http://localhost:5173"],
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
   credentials: true,
   allowedHeaders: ["Content-Type", "Authorization"],
