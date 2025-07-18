@@ -20,7 +20,7 @@ import { badgesSchema } from "../models/badges.model.js";
 
 const cookieOptions = {
   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-  sameSite: "lax", // More relaxed than "none" but still prevents CSRF in most cases
+  sameSite: "none", // More relaxed than "none" but still prevents CSRF in most cases
   secure: true, // Allow over HTTP (not HTTPS) – NOT secure, use only for local development
   httpOnly: true, // Allows access from JavaScript – not recommended, but workable
   path: "/",
