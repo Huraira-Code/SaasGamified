@@ -24,7 +24,6 @@ const cookieOptions = {
   secure: true, // Allow over HTTP (not HTTPS) – NOT secure, use only for local development
   httpOnly: true, // Allows access from JavaScript – not recommended, but workable
   path: "/",
-
 };
 // --- HELPER FUNCTION TO GET DYNAMIC MODELS ---
 const getUserModel = (req) => {
@@ -473,7 +472,7 @@ export const forgotPassword = asyncHandler(async (req, res, next) => {
   }
 
   const user = await User.findOne({ email });
-
+  console.log("usr", user);
   if (!user) {
     // For security, don't reveal if email exists or not
     return next(

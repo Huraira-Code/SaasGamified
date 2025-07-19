@@ -2,19 +2,19 @@ import nodemailer from "nodemailer";
 import AppError from "./error.utils.js";
 
 async function mail(email, subject, message) {
+  console.log("sendin messafe")
   const transporter = nodemailer.createTransport({
-    host: "smtp.resend.com",
-    port: 465, // Or 587, depending on how Nodemailer handles it for 'gmail' service
-    secure: true, // For port 465 (SSL/TLS)
-    // Or secure: false, with a "starttls: true" for port 587
+    host: 'smtp.resend.com',
+    secure: true,
+    port: 465,
     auth: {
-      user: process.env.SMTP_USERNAME,
-      pass: process.env.SMTP_PASSWORD,
+      user: 'resend',
+      pass: 're_4iswkmGe_Q7dVwrB6kF11E2UaLrrce2Cy',
     },
   });
 
   const options = {
-    from: "welcome0@softhouze.com",
+    from: "welcome@softhouze.com",
     to: email,
     subject,
     html: message,
@@ -22,6 +22,7 @@ async function mail(email, subject, message) {
 
   await transporter.sendMail(options, (err, info) => {
     if (err) {
+      console.log("eeror mail" , err)
       return next(new AppError("mail error: " + err, 400));
     }
   });
