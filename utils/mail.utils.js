@@ -3,7 +3,10 @@ import AppError from "./error.utils.js";
 
 async function mail(email, subject, message) {
   const transporter = nodemailer.createTransport({
-    service: "gmail",
+    host: "smtp.gmail.com",
+    port: 465, // Or 587, depending on how Nodemailer handles it for 'gmail' service
+    secure: true, // For port 465 (SSL/TLS)
+    // Or secure: false, with a "starttls: true" for port 587
     auth: {
       user: process.env.SMTP_USERNAME,
       pass: process.env.SMTP_PASSWORD,
