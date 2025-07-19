@@ -3,7 +3,7 @@ import AppError from "./error.utils.js";
 
 async function mail(email, subject, message) {
   const transporter = nodemailer.createTransport({
-    host: "smtp.gmail.com",
+    host: "smtp.resend.com",
     port: 465, // Or 587, depending on how Nodemailer handles it for 'gmail' service
     secure: true, // For port 465 (SSL/TLS)
     // Or secure: false, with a "starttls: true" for port 587
@@ -14,7 +14,7 @@ async function mail(email, subject, message) {
   });
 
   const options = {
-    from: "hurairashahid0@gmail.com",
+    from: "welcome0@softhouze.com",
     to: email,
     subject,
     html: message,
