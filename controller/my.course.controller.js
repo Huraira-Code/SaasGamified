@@ -79,6 +79,7 @@ export const getMyAllCourses = asyncHandler(async (req, res, next) => {
             $project: {
               title: 1,
               thumbnail: 1,
+              courseSequence:1,
             },
           },
         ],
