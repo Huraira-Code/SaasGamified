@@ -337,11 +337,53 @@ const checkTenantStatus = async (req, res) => {
 };
 
 
+const checkAdminExists = async (req, res) => {
+  const { lmsname } = req.body; // You can also use req.query or req.params if preferred
+  const SuperAdminDashboard = getSuperAdminDashboardModel(req); // Get dynamic model
+
+  // 1. Basic validation
+  if (!lmsname) {
+    return res.status(400).json({
+      message: "Please provide the LMS name to check.",
+    });
+  }
+
+  try {
+    const dashboard = await SuperAdminDashboard.findOne();
+
+    if (!dashboard) {
+      return res.status(404).json({
+        message: "Super Admin dashboard data not found.",
+      });
+    }
+
+    const adminExists = dashboard.admins.some(
+      (admin) => admin.lmsname.toLowerCase() === lmsname.toLowerCase()
+    );
+
+    if (adminExists) {
+      return res.status(200).json({
+        exists: true,
+        message: "Admin with this LMS name already exists.",
+      });
+    } else {
+      return res.status(200).json({
+        exists: false,
+        message: "No admin found with this LMS name.",
+      });
+    }
+  } catch (error) {
+    console.error("Error checking admin existence:", error);
+    res.status(500).json({ message: "Server error while checking admin." });
+  }
+};
+
 export {
   superAdminSignIn,
   addAdmin,
   getAllAdmins,
   toggleAdminStatus,
   createCheckoutSession,
-  checkTenantStatus
+  checkTenantStatus,
+  checkAdminExists
 };
