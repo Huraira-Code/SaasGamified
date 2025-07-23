@@ -16,6 +16,6 @@ router.route("/toggleAdminStatus").post(toggleAdminStatus);
 router.route("/createAdmin").post(addAdmin);
 router.route("/create-checkout-session").post(createCheckoutSession);
 router.get("/status/:tenantId", checkTenantStatus);
-router.get("/checkAdminExist", checkAdminExists);
+router.post("/checkAdminExist", checkAdminExists);
 
 export default router;
