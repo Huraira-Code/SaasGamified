@@ -644,7 +644,7 @@ export const updateProfile = asyncHandler(async (req, res, next) => {
         user.avatar.secure_url = result.secure_url;
 
         // Remove temp file - Vercel: This will fail
-        fs.rmSync(`uploads/${req.file.filename}`);
+        fs.rmSync(`/tmp/uploads/${req.file.filename}`);
       }
     } catch (error) {
       // In case of error during file operations, clean up any remaining temp files
