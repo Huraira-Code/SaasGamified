@@ -69,7 +69,7 @@ export const registerMail = async (email) => {
  */
 export const forgotPasswordMail = async (email, link) => {
   const subject = "Password reset requested for your account";
-  const message = `<p>You requested a password reset. Please click the link below to reset your password:</p><p><a href="${link}">${link}</a></p><p>If you did not request this, please ignore this email.</p>`;
+  const message = `<p>You requested a password reset. Please Enter the Code below to reset your password:</p><p><a href="${link}">${link}</a></p><p>If you did not request this, please ignore this email.</p>`;
   try {
     await mail(email, subject, message);
     console.log("Forgot password email dispatched successfully.");
@@ -86,7 +86,7 @@ export const forgotPasswordMail = async (email, link) => {
  */
 export const verifyUserMail = async (email, link) => {
   const subject = "Verify Your Profile for Corsify";
-  const message = `<p>Thank you for registering! Please click the link below to verify your email address:</p><p><a href="${link}">${link}</a></p><p>This link will expire soon.</p>`;
+  const message = `<p>Thank you for registering! Please enter the code below to verify your email address:</p><p><a href="${link}">${link}</a></p><p>This link will expire soon.</p>`;
   try {
     await mail(email, subject, message);
     console.log("Verify user email dispatched successfully.");
