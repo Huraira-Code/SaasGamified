@@ -750,6 +750,6 @@ export const submitQuizAnswers = asyncHandler(async (req, res, next) => {
     totalQuizPoints: totalPossibleQuizPoints,
     XP: updatedUser ? updatedUser.XP : null, // Include current XP in response
     badgeStatusChanges: badgeStatusChanges, // Include badge changes in response
-    // detailedResults: detailedUserAnswers,
+    detailedResults: detailedUserAnswers,
   });
 });
