@@ -587,6 +587,7 @@ export const submitQuizAnswers = asyncHandler(async (req, res, next) => {
       }
 
       detailedUserAnswers.push({
+        question : questionInQuiz,
         questionId: submittedAnswer.questionId,
         submittedAnswer: submittedAnswer.submittedAnswer,
         isCorrect: isCorrect,
