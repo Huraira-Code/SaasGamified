@@ -51,7 +51,7 @@ const userSchema = new Schema(
     },
     verfiy: {
       type: Boolean,
-      default: false, // Default to false, assuming users are not verified initially
+      default: true, // Default to false, assuming users are not verified initially
     },
 
     BadgesID: [
