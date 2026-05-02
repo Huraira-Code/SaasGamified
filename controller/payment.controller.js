@@ -281,12 +281,12 @@ export const verify = asyncHandler(async (req, res, next) => {
   }
 
   // 4. Send course purchasing email
-  await coursePurchasingMail(user.email, {
-    courseName: course.title,
-    courseExpiry: course.expiry, // In months
-    coursePrice: course.price,
-    courseLink: `${process.env.FRONT_URL}/course/${courseId}?tenant=${req.params.databaseName}`, // Ensure tenant context for front-end link
-  });
+  // await coursePurchasingMail(user.email, {
+  //   courseName: course.title,
+  //   courseExpiry: course.expiry, // In months
+  //   coursePrice: course.price,
+  //   courseLink: `${process.env.FRONT_URL}/course/${courseId}?tenant=${req.params.databaseName}`, // Ensure tenant context for front-end link
+  // });
 
   // 5. Update MyCourse progress record for the user in this tenant's database
   let myCourseRecord = await MyCourse.findOne({ userId: id });
